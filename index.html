@@ -1,117 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Distance Calculator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            max-width: 500px;
-            margin: auto;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-        }
-        button {
-            padding: 10px;
-            width: 100%;
-            margin: 10px 0;
-            cursor: pointer;
-        }
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
-            word-break: break-word;
-        }
-    </style>
+  <title>Device Positioning Demo</title>
+  <style>
+    body { font-family: Arial; padding: 30px; }
+    button { padding: 10px 20px; font-size: 16px; }
+    .output { margin-top: 20px; }
+  </style>
 </head>
 <body>
 
-    <h2>Distance Between Two Points on Earth</h2>
+  <h2>Device Location</h2>
+  <button id="getLocationBtn">Get Accurate Location</button>
 
-    <label>Point A Latitude:</label>
-    <input type="number" id="lat1" step="any" placeholder="Enter latitude">
-    <label>Point A Longitude:</label>
-    <input type="number" id="lon1" step="any" placeholder="Enter longitude">
+  <div class="output">
+    <p>Latitude: <span id="lat">--</span></p>
+    <p>Longitude: <span id="lon">--</span></p>
+    <p>Altitude: <span id="alt">--</span></p>
+    <p>Accuracy Radius (m): <span id="accuracy">--</span></p>
+    <p>Distance from Reference (m): <span id="distance">--</span></p>
+  </div>
 
-    <label>Point B Latitude:</label>
-    <input type="number" id="lat2" step="any" placeholder="Enter latitude">
-    <label>Point B Longitude:</label>
-    <input type="number" id="lon2" step="any" placeholder="Enter longitude">
+<script>
+// Reference point (example: London)
+const REF_LAT = 51.5074;
+const REF_LON = -0.1278;
 
-    <button onclick="calculateDistance()">Calculate Distance</button>
-    <button onclick="getUserLocation()">Use My Location as Point A</button>
+// Haversine Formula
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000; // Earth mean radius in meters
+  const toRad = angle => angle * Math.PI / 180;
 
-    <div id="result"></div>
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
 
-    <script>
-    function toRadians(degrees) {
-        return degrees * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+document.getElementById("getLocationBtn").addEventListener("click", () => {
+
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by this browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const { latitude, longitude, altitude, accuracy } = position.coords;
+
+      // Reject very poor accuracy (>50m)
+      if (accuracy > 50) {
+        alert("Location accuracy too low. Try again outdoors.");
+        return;
+      }
+
+      document.getElementById("lat").textContent = latitude.toFixed(6);
+      document.getElementById("lon").textContent = longitude.toFixed(6);
+      document.getElementById("alt").textContent =
+        altitude !== null ? altitude.toFixed(2) + " m" : "N/A";
+      document.getElementById("accuracy").textContent =
+        accuracy.toFixed(2);
+
+      const distance = haversine(latitude, longitude, REF_LAT, REF_LON);
+      document.getElementById("distance").textContent =
+        distance.toFixed(2);
+    },
+    error => {
+      alert("Error retrieving location: " + error.message);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
     }
+  );
 
-    function calculateDistance() {
-        const lat1 = parseFloat(document.getElementById('lat1').value);
-        const lon1 = parseFloat(document.getElementById('lon1').value);
-        const lat2 = parseFloat(document.getElementById('lat2').value);
-        const lon2 = parseFloat(document.getElementById('lon2').value);
-
-        if ([lat1, lon1, lat2, lon2].some(isNaN)) {
-            alert('Please enter all coordinates.');
-            return;
-        }
-
-        // Earth radius in meters (more precise)
-        const R = 6371008.8;
-
-        const φ1 = toRadians(lat1);
-        const φ2 = toRadians(lat2);
-        const Δφ = toRadians(lat2 - lat1);
-        const Δλ = toRadians(lon2 - lon1);
-
-        const a =
-            Math.sin(Δφ / 2) ** 2 +
-            Math.cos(φ1) * Math.cos(φ2) *
-            Math.sin(Δλ / 2) ** 2;
-
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-
-        document.getElementById('result').textContent =
-            `Distance: ${distance.toFixed(3)} meters`;
-    }
-
-    function getUserLocation() {
-        if (!navigator.geolocation) {
-            alert('Geolocation is not supported by your browser.');
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude, accuracy } = position.coords;
-
-                document.getElementById('lat1').value = latitude;
-                document.getElementById('lon1').value = longitude;
-
-                document.getElementById('result').textContent =
-                    `Point A set. Device reported accuracy: ±${accuracy.toFixed(2)} meters`;
-            },
-            (error) => {
-                alert('Unable to retrieve your location. Enable GPS and try outdoors.');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 0
-            }
-        );
-    }
+});
 </script>
-
 
 </body>
 </html>
