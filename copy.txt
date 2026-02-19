@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 500px;
+            margin: auto;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            padding: 10px;
+            width: 100%;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Distance Between Two Points on Earth</h2>
+
+    <label>Point A Latitude:</label>
+    <input type="number" id="lat1" step="any" placeholder="Enter latitude">
+    <label>Point A Longitude:</label>
+    <input type="number" id="lon1" step="any" placeholder="Enter longitude">
+
+    <label>Point B Latitude:</label>
+    <input type="number" id="lat2" step="any" placeholder="Enter latitude">
+    <label>Point B Longitude:</label>
+    <input type="number" id="lon2" step="any" placeholder="Enter longitude">
+
+    <button onclick="calculateDistance()">Calculate Distance</button>
+    <button onclick="getUserLocation()">Use My Location as Point A</button>
+
+    <div id="result"></div>
+
+    <script>
+        function toRadians(degrees) {
+            return degrees * Math.PI / 180;
+        }
+
+        function calculateDistance() {
+            const lat1 = parseFloat(document.getElementById('lat1').value);
+            const lon1 = parseFloat(document.getElementById('lon1').value);
+            const lat2 = parseFloat(document.getElementById('lat2').value);
+            const lon2 = parseFloat(document.getElementById('lon2').value);
+
+            if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+                alert('Please enter all coordinates.');
+                return;
+            }
+
+            const R = 6371; // Radius of the Earth in km
+            const dLat = toRadians(lat2 - lat1);
+            const dLon = toRadians(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+
+            // Show distance in full precision
+            document.getElementById('result').textContent = `Distance: ${distance} km`;
+        }
+
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        // Insert coordinates exactly as they come from device
+                        document.getElementById('lat1').value = position.coords.latitude;
+                        document.getElementById('lon1').value = position.coords.longitude;
+                        alert('Location retrieved! Now enter Point B coordinates and calculate distance.');
+                    },
+                    (error) => {
+                        alert('Unable to retrieve your location. Make sure location services are enabled.');
+                    }
+                );
+            } else {
+                alert('Geolocation is not supported by your browser.');
+            }
+        }
+    </script>
+
+</body>
+</html>
